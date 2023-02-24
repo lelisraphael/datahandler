@@ -11,6 +11,26 @@ module Api
             parse_academic_experience(entry)
           end
 
+          regex = /(?<cargo>[^\n]+)\n(?<empresa>[^\n]+)\n(?<data>(?:Janeiro|Fevereiro|Março|Abril|Maio|Junho|Julho|Agosto|Setembro|Outubro|Novembro|Dezembro)\s+de\s+\d{4}\s+a\s+(?:Janeiro|Fevereiro|Março|Abril|Maio|Junho|Julho|Agosto|Setembro|Outubro|Novembro|Dezembro)\s+de\s+\d{4}|\d{4}\s+a\s+\d{4})/
+          matches = candidate['Bloco01'].scan(regex)
+          professionalExperience = []
+
+          matches.each do |match|
+            period = match[2].split(" a ")
+            company = match[1]
+            jobRole = match[0]
+
+            if period.size == 2
+                  startDate = period[0]
+              endDate = period[1]
+            else
+              startDate = "#{period[0]}-01-01"
+              endDate = "#{period[1]}-12-31"
+            end
+
+            professionalExperience << { jobRole: jobRole, company: company, startDate: startDate, endDate: endDate }
+          end
+
           {
             url: get_url(candidate['Bloco05']),
             name: candidate['Nome'],
@@ -21,7 +41,8 @@ module Api
             Phone: parse_telephone(candidate['Bloco05']),
             DesiredSalary: parse_desired_salary(candidate['Bloco04']),
             AcademicExperience: academic_experience,
-            ProfessionalExperience: parse_professional_experience(candidate['Bloco05'])
+            ProfessionalExperience: professionalExperience
+            
           }
         end
 
