@@ -6,7 +6,7 @@ module Api
       def index; end
 
       def create
-        url = 'candidates.json'
+        url = 'xaw.json'
         candidates = []
 
         File.foreach(url) do |line|
@@ -113,6 +113,7 @@ module Api
       end
 
       private
+      
 
       def save_single_candidate(candidate)
         # Create or update Source

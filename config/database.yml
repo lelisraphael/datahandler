@@ -4,7 +4,7 @@ default: &default
   password: raphael23
   host: wisehands.ddns.net
   port: 4433
-  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 10 } %>
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 20 } %>
   timeout: 500000
 
 development:

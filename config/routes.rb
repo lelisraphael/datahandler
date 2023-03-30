@@ -5,6 +5,8 @@ Rails.application.routes.draw do
     namespace :v1 do
       resources :indeed
       resources :linkedin
+      resources :infojobs
+
     end
   end
 end

@@ -10,6 +10,8 @@ gem 'tiny_tds'
 gem 'activerecord-sqlserver-adapter'
 gem 'mysql2', '>= 0.4.4'
 gem 'puma', '~> 3.11'
+gem 'redis'
+gem 'sidekiq'
 # Build JSON APIs with ease. Read more: https://github.com/rails/jbuilder
 # gem 'jbuilder', '~> 2.7'
 # Use Redis adapter to run Action Cable in production
