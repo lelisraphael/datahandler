@@ -3,7 +3,12 @@ require 'json'
 module Api
   module V1
     class LinkedinController < ApplicationController
-      def index; end
+      before_action :connect_to_linkedin_database
+
+      def index
+        candidates = Type.all
+        render json: candidates
+      end
 
       def create
         url = 'xaw.json'
@@ -349,6 +354,10 @@ module Api
         end
 
         parsed_date
+      end
+
+      def connect_to_linkedin_database
+        ActiveRecord::Base.establish_connection(:linkedin_database)
       end
     end
   end

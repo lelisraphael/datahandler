@@ -11,6 +11,14 @@ development:
   <<: *default
   database: dbCandidatesInfojobs
 
+infojobs_database:
+  <<: *default
+  database: dbCandidatesInfojobs
+
+linkedin_database:
+  <<: *default
+  database: dbCandidatesLinkedin
+
 test:
   <<: *default
   database: <%= ENV['SQLSERVER_DATABASE_NAME'] || 'database_name' %>_test

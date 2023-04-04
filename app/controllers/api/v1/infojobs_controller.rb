@@ -1,6 +1,13 @@
 module Api
   module V1
     class InfojobsController < ApplicationController
+      before_action :connect_to_infojobs_database
+
+      def index
+        candidates = Candidate.includes(:experiences).all
+        render json: candidates
+      end
+
       def create
         text = params['Candidatos']
         candidates = []
@@ -89,11 +96,11 @@ module Api
         if candidate[:AcademicExperience]
           candidate[:AcademicExperience].each do |academic|
             company = Company.find_or_create_by(Description: academic[:Company]) if academic[:Company]
-            course = JobRole.find_or_create_by(Description: academic[:Course]) 
+            course = JobRole.find_or_create_by(Description: academic[:Course])
 
             experience_attrs = {
               IDCompany: company.id,
-              IDJobRole: course.id ,
+              IDJobRole: course.id,
               IDType: 2,
               StartDate: academic[:StartDate],
               EndDate: academic[:EndDate]
@@ -114,14 +121,14 @@ module Api
         return unless candidate[:ProfessionalExperience]
 
         candidate[:ProfessionalExperience].each do |professional|
-          company = Company.find_or_create_by(Description: professional[:Company]) 
-          job_role = JobRole.find_or_create_by(Description: professional[:JobRole]) 
-          level = Level.find_or_create_by(Description: professional[:Level]) 
+          company = Company.find_or_create_by(Description: professional[:Company])
+          job_role = JobRole.find_or_create_by(Description: professional[:JobRole])
+          level = Level.find_or_create_by(Description: professional[:Level])
 
           experience_attrs = {
             IDCompany: company.id,
             IDJobRole: job_role.id,
-            IDLevel: level.id || '', 
+            IDLevel: level.id || '',
             IDType: 1,
             StartDate: professional[:StartDate],
             EndDate: professional[:EndDate]
@@ -165,14 +172,16 @@ module Api
           start_date = format_date(splited_period[0])
           end_date = format_date(splited_period[1])
 
+          next unless job_role && company
+
           academic_experience << {
             Company: company,
             StartDate: start_date,
             EndDate: end_date,
             Course: job_role,
             Type: 'Academic',
-            period: period,
-          } if job_role && company
+            period: period
+          }
         end
 
         # Group academic_experience por período, evitando descrições repetidas
@@ -207,6 +216,8 @@ module Api
           level = find_level_occurrence(job_role) if job_role
 
           # Adiciona as informações de experiência profissional ao array
+          next unless job_role && company
+
           professional_experience << {
             Company: company,
             StartDate: start_date,
@@ -218,7 +229,7 @@ module Api
             period: period,
             Description: description.gsub(/[\n\r?]/, ''),
             jobrole_company: jobrole_company
-          } if job_role && company
+          }
         end
 
         # Remove os cargos da descrição caso apareçam
@@ -262,7 +273,6 @@ module Api
 
         period = date_str
 
-
         year = ''
         month = ''
 
@@ -290,6 +300,10 @@ module Api
         regex = /(\b(gente|supervisor|aprendiz|chefe|senior|sênior|pleno|junior|júnior|estagiári|gestor|diretor|coordenador|gerente)(a|o)?(s)?\b)/i
         match = string.match(regex)
         match ? match[0] : nil
+      end
+
+      def connect_to_infojobs_database
+        ActiveRecord::Base.establish_connection(:infojobs_database)
       end
     end
   end
