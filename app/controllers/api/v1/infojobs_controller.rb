@@ -262,16 +262,23 @@ module Api
 
         period = date_str
 
+
+        year = ''
+        month = ''
+
         return nil if period == 'o momento'
         return nil if period.nil?
 
         # Extract the month and year from the input string
         match = period.match(/([A-Z][a-z]{2}\.) (\d{4})/)
-        month_abbr = match[1]
-        year = match[2]
+
+        return nil if match.nil?
+
+        month_abbr = match[1] if match
+        year = match[2] if match
 
         # Convert the abbreviated month to the month number
-        month = months[month_abbr]
+        month = months[month_abbr] if month_abbr
 
         # Combine the year, month, and day into a string in the format 'YYYYMMDD'
         "#{year}#{month}01"
