@@ -113,7 +113,6 @@ module Api
       end
 
       private
-      
 
       def save_single_candidate(candidate)
         # Create or update Source
@@ -128,67 +127,65 @@ module Api
         saved_candidate = Candidate.find_or_initialize_by(URL: candidate[:URL])
 
         # Set candidate attributes
-        saved_candidate.Name = candidate[:Name]
-        saved_candidate.Local = candidate[:Local]
-        saved_candidate.Obs = candidate[:Obs]
-        saved_candidate.ExtraCode = candidate[:ExtraCode]
-        saved_candidate.Email = candidate[:Email]
-        saved_candidate.Phone = candidate[:Phone]
-        saved_candidate.DesiredSalary = candidate[:DesiredSalary]
-        saved_candidate.IDSource = saved_source.id
-        saved_candidate.IDJobRole = general_job_role.id
-        saved_candidate.IDArea = general_job_role.id
-        saved_candidate.IDLevel = general_level.id
+        saved_candidate.attributes = {
+          Name: candidate[:Name],
+          Local: candidate[:Local],
+          Obs: candidate[:Obs],
+          ExtraCode: candidate[:ExtraCode],
+          Email: candidate[:Email],
+          Phone: candidate[:Phone],
+          DesiredSalary: candidate[:DesiredSalary],
+          IDSource: saved_source.id,
+          IDJobRole: general_job_role.id,
+          IDArea: general_area.id,
+          IDLevel: general_level.id
+        }
 
         # Save candidate
-        begin
-          saved_candidate.save!
-        rescue ActiveRecord::RecordInvalid => e
-          puts "Erro ao salvar candidato: #{e.message}"
+        unless saved_candidate.save
+          puts "Erro ao salvar candidato: #{saved_candidate.errors.full_messages.join(', ')}"
           return false
         end
 
         # Update or create academic experiences
-        if candidate[:AcademicExperience]
-          candidate[:AcademicExperience].each do |academic|
-            course = JobRole.find_or_create_by(Description: academic[:Course])
-            level = Level.find_or_create_by(Description: academic[:Level])
-            area = Area.find_or_create_by(Description: academic[:Area])
-            company = Company.find_or_create_by(Description: academic[:Company])
-            type = Type.find_or_create_by(Description: academic[:Type])
-            experience = saved_candidate.experiences.find_or_initialize_by(IDCompany: company.id, IDArea: area.id,
-                                                                           IDJobRole: course.id, IDLevel: level.id, IDType: 2)
-            experience.StartDate = academic[:StartDate]
-            experience.EndDate = academic[:EndDate]
+        candidate[:AcademicExperience]&.each do |academic|
+          attributes = {
+            Description: academic[:Course] || '',
+            IDLevel: Level.find_or_create_by(Description: academic[:Level] || '').id,
+            IDArea: Area.find_or_create_by(Description: academic[:Area] || '').id,
+            IDCompany: Company.find_or_create_by(Description: academic[:Company] || '').id,
+            IDType: Type.find_or_create_by(Description: academic[:Type] || '').id,
+            StartDate: academic[:StartDate],
+            EndDate: academic[:EndDate]
+          }
+          experience = saved_candidate.experiences.find_or_initialize_by(attributes)
 
-            # Save experience
-            begin
-              experience.save!
-            rescue ActiveRecord::RecordInvalid => e
-              puts "Erro ao salvar experiência acadêmica: #{e.message}"
-              return false
-            end
+          # Save Experience
+          unless experience.save
+            puts "Erro ao salvar experiência acadêmica: #{experience.errors.full_messages.join(', ')}"
+            return false
           end
         end
 
         # Update or create professional experiences
-        if candidate[:ProfessionalExperience]
-          candidate[:ProfessionalExperience].each do |professional|
-            company = Company.find_or_create_by(Description: professional[:Company])
-            job_role = JobRole.find_or_create_by(Description: professional[:JobRole])
-            area = Area.find_or_create_by(Description: professional[:Area])
-            level = Level.find_or_create_by(Description: professional[:Level])
-            type = Type.find_or_create_by(Description: professional[:Type])
-            experience = Experience.find_or_create_by(IDCandidate: saved_candidate.id,
-                                                      StartDate: professional[:StartDate], EndDate: professional[:EndDate], IDCompany: company.id, IDJobRole: job_role.id, IDArea: area.id, IDLevel: level.id, IDType: 1, Description: professional[:Description])
+        candidate[:ProfessionalExperience]&.each do |professional|
+          attributes = {
+            IDCandidate: saved_candidate.id,
+            StartDate: professional[:StartDate],
+            EndDate: professional[:EndDate],
+            IDCompany: Company.find_or_create_by(Description: professional[:Company] || '').id,
+            IDJobRole: JobRole.find_or_create_by(Description: professional[:JobRole] || '').id,
+            IDArea: Area.find_or_create_by(Description: professional[:Area] || '').id,
+            IDLevel: Level.find_or_create_by(Description: professional[:Level] || '').id,
+            IDType: Type.find_or_create_by(Description: professional[:Type] || '').id,
+            Description: professional[:Description] || ''
+          }
+          experience = Experience.find_or_create_by(attributes)
 
-            # Save experience
-            begin
-              experience.save!
-            rescue ActiveRecord::RecordInvalid => e
-              puts "Erro ao salvar experiência profissional: #{e.message}"
-              return false
-            end
+          # Save Experience
+          unless experience.save
+            puts "Erro ao salvar experiência profissional: #{experience.errors.full_messages.join(', ')}"
+            return false
           end
         end
 
