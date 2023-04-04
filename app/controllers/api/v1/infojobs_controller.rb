@@ -24,22 +24,22 @@ module Api
           academic_experience = []
           academic.scan(regex).flatten.each do |period|
             description = academic.split(period)[0].lines.last.strip
+            company, job_role  = description.split(/,\s*(?=\D+$)/).map(&:strip).reverse
 
             splited_period = period.split(' até ')
             start_date = formatt_date(splited_period[0])
             end_date = formatt_date(splited_period[1])
 
             academic_experience << {
-              Company: '',
+              Company: company,
               StartDate: start_date,
               EndDate: end_date,
-              JobRole: '',
+              JobRole: job_role,
               Type: 'Academic',
               Area: '',
               Level: '',
               period: period,
               cargo: '',
-              description: description
             }
           end
 
@@ -51,6 +51,7 @@ module Api
             grouped[period] << r unless grouped[period].any? { |a| a[:description] == r[:description] }
           end
 
+
           # Regex para capturar informações de experiência profissional
           professional_regex = /(?:(?:\n|\r)([A-Z][a-z]{2}\. \d{4}) até ((?:[A-Z][a-z]{2}\. \d{4}|o momento(?: \(Finalização prevista - (?:[A-Z][a-z]{2}\. \d{4})\))?)))(?:\n|\r)(.*?)(?=\n[A-Z][a-z]{2}\. \d{4} até|\z)/m
 
@@ -60,26 +61,27 @@ module Api
           # Captura as informações de experiência profissional com a regex
           professional.scan(professional_regex).each do |period, _, description|
 
-            cargo = professional.split(period)[0].lines.last.strip
+            jobrole_company = professional.split(period)[0].lines.last.strip
+            company, job_role  = jobrole_company.split(/,\s*(?=\D+$)/).map(&:strip).reverse
+
             description ||= professional.lines[professional.lines.index(period) - 2]&.strip
 
             description = description.split(".\r\n")[0] + ".\r\n"
 
             splited_period = period.split(' até ')
             start_date = formatt_date(splited_period[0])
-            end_date = formatt_date(splited_period[1])
+            end_date = formatt_date(_)
 
             # Adiciona as informações de experiência profissional ao array
             professional_experience << {
-              Company: '',
+              Company: company,
               StartDate: start_date,
               EndDate: end_date,
-              JobRole: '',
+              JobRole: job_role,
               Type: 'Work',
               Area: '',
               Level: '',
               period: period,
-              cargo: cargo,
               description: description
             }
           end
@@ -159,6 +161,7 @@ module Api
 
         periodo = _date
 
+        return nil if periodo == 'o momento'
         return nil if periodo.nil?
 
         # Extrai o mês e o ano da string de entrada
