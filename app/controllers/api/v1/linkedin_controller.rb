@@ -101,7 +101,7 @@ module Api
             ProfessionalExperience: professional_experiences
           }
 
-          # candidates << candidate unless academic_experience.size == 0 && professional_experiences.size == 0
+          candidates << candidate unless academic_experience.size == 0 && professional_experiences.size == 0
 
           save_single_candidate(candidate) unless academic_experience.size == 0 && professional_experiences.size == 0
 
@@ -111,7 +111,7 @@ module Api
         end
 
         begin
-          # render json: candidates
+          render json: candidates
         rescue Exception
           puts 'Could not save candidate'
         end
@@ -159,7 +159,7 @@ module Api
             IDLevel: Level.find_or_create_by(Description: academic[:Level] || '').id,
             IDArea: Area.find_or_create_by(Description: academic[:Area] || '').id,
             IDCompany: Company.find_or_create_by(Description: academic[:Company] || '').id,
-            IDType: Type.find_or_create_by(Description: academic[:Type] || '').id,
+            IDType: 2,
             StartDate: academic[:StartDate],
             EndDate: academic[:EndDate]
           }
@@ -182,7 +182,7 @@ module Api
             IDJobRole: JobRole.find_or_create_by(Description: professional[:JobRole] || '').id,
             IDArea: Area.find_or_create_by(Description: professional[:Area] || '').id,
             IDLevel: Level.find_or_create_by(Description: professional[:Level] || '').id,
-            IDType: Type.find_or_create_by(Description: professional[:Type] || '').id,
+            IDType: 1,
             Description: professional[:Description] || ''
           }
           experience = Experience.find_or_create_by(attributes)
@@ -339,19 +339,8 @@ module Api
 
         formats = ['%Y', '%Y-%m', '%Y-%m-%d', '%m/%Y', '%m/%d/%Y']
         parsed_date = nil
-
-        formats.each do |format|
-          parsed_date = Date.strptime(date, format)
-          break
-        rescue ArgumentError
-        end
-
-        if parsed_date
-          year = parsed_date.year.to_s
-          month = parsed_date.month.to_s.rjust(2, '0')
-          day = parsed_date.day.to_s.rjust(2, '0')
-          parsed_date = "#{year}#{month}#{day}"
-        end
+        parsed_date =  "#{date.gsub('-','')}#{'01'}" if date.size == 7
+        parsed_date =  "#{date}#{'01-01'}" if date.size == 4
 
         parsed_date
       end

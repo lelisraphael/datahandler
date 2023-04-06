@@ -13,11 +13,15 @@ module Api
         candidates = []
 
         text.map do  |candidate|
-          experiences = candidate['Bloco01'].split('Experiência profissional') if candidate
-          academic = experiences[0]
-          professional = experiences[1]
-          professional = professional.split('Informática')
-          professional = professional[0]
+          begin
+            experiences = candidate['Bloco01'].split('Experiência profissional') if candidate
+            academic = experiences[0]
+            professional = experiences[1]
+            professional = professional.split('Informática')
+            professional = professional[0]
+          rescue
+            next
+          end
 
           # Get general Infromation
           obs, desired_salary, level, area = parse_general_info(candidate['Bloco01']) if candidate
@@ -49,12 +53,15 @@ module Api
             ProfessionalExperience: professional_experience[0]
           }
 
-          save_single_candidate(candidate) unless academic_experience.size == 0 && professional_experience.size == 0
-
-          candidates << candidate unless academic_experience.size == 0 && professional_experience.size == 0
+          begin
+            save_single_candidate(candidate) unless academic_experience.size == 0 && professional_experience.size == 0
+          rescue
+            puts "Couldn't save"
+          end
+          # candidates << candidate unless academic_experience.size == 0 && professional_experience.size == 0
         end
 
-        render json: candidates
+        # render json: candidates
       end
 
       private
