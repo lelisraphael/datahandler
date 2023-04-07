@@ -19,18 +19,32 @@ module Api
             professional = experiences[1]
             professional = professional.split('Informática')
             professional = professional[0]
-          rescue
+          rescue StandardError
             next
           end
 
           # Get general Infromation
-          obs, desired_salary, level, area = parse_general_info(candidate['Bloco01']) if candidate
+          obs, desired_salary, level, area, medical_report = parse_general_info(candidate['Bloco01']) if candidate
 
           # Get Academic Experience
           grouped, academic_experience = parse_academic_experience(academic) if academic
 
           # Get Professional Experience
           professional_experience = parse_professional_experience(professional) if professional
+
+          # Expressão regular para encontrar o primeiro endereço de e-mail em um texto
+          email_regex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/
+
+          # Encontra o primeiro endereço de e-mail no texto
+          email_match = candidate['Bloco01'].match(email_regex)
+          email = email_match[0] if email_match
+
+          # Expressão regular para encontrar números de telefone
+          phone_regex = /\(?\d{2}\)?\s?\d{4,5}-?\d{4}/
+
+          # Encontra todos os números de telefone no texto
+          phone_match = candidate['Bloco01'].match(phone_regex)
+          phone = phone_match[0] if phone_match
 
           candidate = {
             Name: candidate['Nome'],
@@ -40,8 +54,8 @@ module Api
             Local: candidate['Localidade'],
             Obs: obs,
             ExtraCode: candidate['URL'],
-            Email: candidate['Email'],
-            Phone: candidate['Telephone'],
+            Email: email,
+            Phone: phone,
             DesiredSalary: desired_salary,
             Area: area,
             Contract: '',
@@ -49,19 +63,21 @@ module Api
             WorkModel: '',
             Level: level,
             Source: 'Infojobs',
+            MedicalReport: medical_report,
             AcademicExperience: grouped.values.flatten,
             ProfessionalExperience: professional_experience[0]
           }
 
-          begin
-            save_single_candidate(candidate) unless academic_experience.size == 0 && professional_experience.size == 0
-          rescue
-            puts "Couldn't save"
+            if (academic_experience.size > 0 && professional_experience.size > 0) && !obs.nil? || !email.nil?
+              # save_single_candidate(candidate)
+            end
+     
+          if (academic_experience.size > 0 && professional_experience.size > 0) && !obs.nil? || !email.nil?
+            candidates << candidate
           end
-          # candidates << candidate unless academic_experience.size == 0 && professional_experience.size == 0
         end
 
-        # render json: candidates
+        render json: candidates
       end
 
       private
@@ -128,21 +144,24 @@ module Api
         return unless candidate[:ProfessionalExperience]
 
         candidate[:ProfessionalExperience].each do |professional|
+
+          level = ''
+
           company = Company.find_or_create_by(Description: professional[:Company])
           job_role = JobRole.find_or_create_by(Description: professional[:JobRole])
-          level = Level.find_or_create_by(Description: professional[:Level])
+          level =  Level.find_or_create_by(Description: professional[:Level]) if !level.nil?
 
           experience_attrs = {
             IDCompany: company.id,
             IDJobRole: job_role.id,
-            IDLevel: level.id || '',
+            IDLevel: level,
             IDType: 1,
             StartDate: professional[:StartDate],
-            EndDate: professional[:EndDate]
+            EndDate: professional[:EndDate],
+            Description: professional[:Description]
           }
 
           experience = saved_candidate.experiences.find_or_initialize_by(experience_attrs)
-          experience.attributes = { Description: professional[:Description] }
 
           # Save experience
           unless experience.save
@@ -153,8 +172,14 @@ module Api
       end
 
       def parse_general_info(text)
+        medical_report = nil
         obs_regex = /Resumo\s+(.+?)\s+Objetivos profissionais/m
         obs = text.match(obs_regex)&.[](1)&.gsub(/[\n\r]/, ' ')
+
+        medical_report = 1 if obs && obs.match(/Laudo(s)?.*$/)
+
+        obs.gsub!(/Laudo(s)?.*$/, '')&.strip! if obs
+
 
         salary_regex = /Pretensão Salarial:\s*R\$\s*(\d+),\d+\s*(?:-\s*R\$\s*(\d+),\d+)?/
         desired_salary = text.match(salary_regex)&.[](1)
@@ -165,7 +190,7 @@ module Api
         area_regex = /Cargo desejado\s+(.+?)\s+Pretensão Salarial/m
         area = text.match(area_regex)&.[](1)&.gsub(/[\n\r]/, ' ')
 
-        [obs, desired_salary, level, area]
+        [obs, desired_salary, level, area, medical_report]
       end
 
       def parse_academic_experience(text)
@@ -223,7 +248,12 @@ module Api
           level = find_level_occurrence(job_role) if job_role
 
           # Adiciona as informações de experiência profissional ao array
-          next unless job_role && company
+          next unless job_role && company 
+
+          description.gsub!(/[\n\r?]/, '').strip!
+          description.gsub!(';', '; ')
+
+          description.split('Laudos')
 
           professional_experience << {
             Company: company,
@@ -234,7 +264,7 @@ module Api
             Area: '',
             Level: level,
             period: period,
-            Description: description.gsub(/[\n\r?]/, ''),
+            Description: description,
             jobrole_company: jobrole_company
           }
         end

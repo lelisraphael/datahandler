@@ -101,9 +101,14 @@ module Api
             ProfessionalExperience: professional_experiences
           }
 
-          candidates << candidate unless academic_experience.size == 0 && professional_experiences.size == 0
+          if (academic_experience.size > 0 || professional_experiences.size > 0) &&
+             (email || obs || person.dig('phone_numbers', 0)) &&
+             formatted_location
 
-          save_single_candidate(candidate) unless academic_experience.size == 0 && professional_experiences.size == 0
+            # candidates << candidate
+
+            save_single_candidate(candidate)
+          end
 
         rescue JSON::ParserError => e
           Rails.logger.error("Error parsing JSON in line: #{line}")
@@ -111,7 +116,7 @@ module Api
         end
 
         begin
-          render json: candidates
+          # render json: candidates
         rescue Exception
           puts 'Could not save candidate'
         end
@@ -339,8 +344,8 @@ module Api
 
         formats = ['%Y', '%Y-%m', '%Y-%m-%d', '%m/%Y', '%m/%d/%Y']
         parsed_date = nil
-        parsed_date =  "#{date.gsub('-','')}#{'01'}" if date.size == 7
-        parsed_date =  "#{date}#{'01-01'}" if date.size == 4
+        parsed_date =  "#{date.gsub('-', '')}01" if date.size == 7
+        parsed_date =  "#{date}01-01" if date.size == 4
 
         parsed_date
       end
