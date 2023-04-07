@@ -178,9 +178,9 @@ module Api
         obs = text.match(obs_regex)&.[](1)&.gsub(/[\n\r]/, ' ')
         obs.capitalize! if obs
 
-        medical_report = 1 if obs && obs.match(/Laudo(s)?.*$/)
+        medical_report = 1 if obs && obs.match(/Laudo(s)?.*$/i)
 
-        obs.gsub!(/Laudo(s)?.*$/, '')&.strip! if obs
+        obs.gsub!(/Laudo(s)?.*$/i, '')&.strip! if obs
 
         salary_regex = /Pretensão Salarial:\s*R\$\s*(\d+),\d+\s*(?:-\s*R\$\s*(\d+),\d+)?/
         desired_salary = text.match(salary_regex)&.[](1)
