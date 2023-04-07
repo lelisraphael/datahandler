@@ -68,11 +68,11 @@ module Api
             ProfessionalExperience: professional_experience[0]
           }
 
-            if (academic_experience.size > 0 && professional_experience.size > 0) && !obs.nil? || !email.nil?
+            if (academic_experience.size > 0 && professional_experience.size > 0) && (!obs.nil? || !email.nil?)
               # save_single_candidate(candidate)
             end
      
-          if (academic_experience.size > 0 && professional_experience.size > 0) && !obs.nil? || !email.nil?
+          if (academic_experience.size > 0 && professional_experience.size > 0) && (!obs.nil? || !email.nil?)
             candidates << candidate
           end
         end
@@ -102,6 +102,7 @@ module Api
           ExtraCode: candidate[:ExtraCode],
           Email: candidate[:Email],
           Phone: candidate[:Phone],
+          MedicalReport: candidate[:MedicalReport],
           DesiredSalary: candidate[:DesiredSalary],
           IDSource: saved_source.id,
           IDJobRole: general_job_role.id,
@@ -175,11 +176,11 @@ module Api
         medical_report = nil
         obs_regex = /Resumo\s+(.+?)\s+Objetivos profissionais/m
         obs = text.match(obs_regex)&.[](1)&.gsub(/[\n\r]/, ' ')
+        obs.capitalize! if obs
 
         medical_report = 1 if obs && obs.match(/Laudo(s)?.*$/)
 
         obs.gsub!(/Laudo(s)?.*$/, '')&.strip! if obs
-
 
         salary_regex = /Pretensão Salarial:\s*R\$\s*(\d+),\d+\s*(?:-\s*R\$\s*(\d+),\d+)?/
         desired_salary = text.match(salary_regex)&.[](1)
@@ -250,10 +251,8 @@ module Api
           # Adiciona as informações de experiência profissional ao array
           next unless job_role && company 
 
-          description.gsub!(/[\n\r?]/, '').strip!
+          description.gsub!(/[\n\r?]/, ' ').strip!
           description.gsub!(';', '; ')
-
-          description.split('Laudos')
 
           professional_experience << {
             Company: company,
